@@ -1,0 +1,10 @@
+[package]
+name = "example"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+polarhouse = {version = "0.1.5", registry = "local" }
+
+[package.metadata.cargo-machete]
+ignored = ["polarhouse"]

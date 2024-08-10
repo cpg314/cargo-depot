@@ -1,0 +1,52 @@
+services:
+  # Create a registry
+  init-registry:
+    image: rust:1.80.1
+    volumes:
+      - ../:/crate
+      - registry:/registry
+      - ../target-cross/x86_64-unknown-linux-gnu/release/:/usr/local/bin
+    working_dir: /crate
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        rm -rf /registry/*
+        # polarhouse has a git dependency on the klickhouse fork
+        which cargo-depot
+        cargo depot --registry /registry --url http://registry:80 \
+        https://github.com/cpg314/klickhouse/archive/refs/tags/v0.11.0-1.tar.gz \
+        https://github.com/cpg314/polarhouse/archive/6224316bb1fb0db155d49a5f6cb5acf09af87acf.tar.gz
+  # Serve the registry
+  registry:
+    image: caddy
+    command:
+      [
+        "caddy",
+        "file-server",
+        "--listen=0.0.0.0:80",
+        "--root",
+        "/registry",
+        "--access-log",
+      ]
+    volumes:
+      - registry:/registry
+  # Use the registry
+  use-registry:
+    image: rust:1.80.1
+    volumes:
+      - ./:/crate
+    working_dir: /crate
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        rm Cargo.lock
+        cargo check
+    depends_on:
+      registry:
+        condition: service_started
+      init-registry:
+        condition: service_completed_successfully
+volumes:
+  registry:

@@ -1,0 +1,17 @@
+name: "cargo-local-registry"
+arch: "amd64"
+platform: "linux"
+version: "${CARGO_MAKE_PROJECT_VERSION}"
+release: "${RELEASE}"
+section: "default"
+priority: "extra"
+provides:
+  - cargo-local-registry
+description: "Create and Maintain a simple cargo alternative registry, which can be served using any webserver."
+vendor: "cpg314"
+maintainer: "cpg314 <44120267+cpg314@users.noreply.github.com>"
+homepage: "https://github.com/cpg314/cargo-local-registry"
+contents:
+  - src: "./target-cross/$ARCH/release/cargo-local-registry"
+    dst: /usr/local/bin/cargo-local-registry
+    expand: true

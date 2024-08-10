@@ -1,0 +1,10 @@
+extend = "common.toml"
+
+[config]
+load_script = "wget -nc https://raw.githubusercontent.com/cpg314/cargo-make-template/v0.1.1/common.toml"
+
+[tasks.example]
+dependencies = ["build"]
+cwd = "example"
+command = "docker"
+args = ["compose", "up"]
