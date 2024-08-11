@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+use itertools::Itertools;
 use log::*;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
@@ -71,6 +72,26 @@ impl From<cargo_metadata::Dependency> for Dependency {
             package: None,
         }
     }
+}
+
+fn check_dirty(repository: &Path) -> anyhow::Result<()> {
+    let out = std::process::Command::new("git")
+        .args(["status", "--porcelain"])
+        .current_dir(repository)
+        .output()?;
+    if !out.status.success() {
+        // Likely not a git repository
+        return Ok(());
+    }
+    let out = String::from_utf8_lossy(&out.stdout);
+    let out = out
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        // This gets filtered by cargo package anyway
+        .filter(|l| !l.contains("Cargo.lock"))
+        .collect_vec();
+    anyhow::ensure!(out.is_empty(), "Repository not clean: {}. These files would be embedded in the package. Stash them with `git stash -u` or add them to gitignore", out.join(" "));
+    Ok(())
 }
 
 // https://doc.rust-lang.org/cargo/reference/registry-index.html#json-schema
@@ -158,6 +179,7 @@ impl Registry {
             return Ok(());
         }
 
+        check_dirty(workspace_metadata.workspace_root.as_std_path())?;
         // Edit manifest
         info!("Editing manifest");
         let manifest = std::fs::read_to_string(&p.manifest_path)?;
