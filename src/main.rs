@@ -5,7 +5,7 @@ use clap::Parser;
 use itertools::Itertools;
 use log::*;
 
-use cargo_depot::Registry;
+use cargo_depot::{FeaturesFlags, Registry};
 
 #[derive(Parser)]
 #[command(name = "cargo")]
@@ -26,9 +26,15 @@ pub struct Flags {
     url: Option<String>,
     /// Paths to crates (local workspaces or HTTP links to tarballs).
     crates: Vec<String>,
+    #[clap(flatten)]
+    features: FeaturesFlags,
 }
 
-fn process_workspace(workspace: impl AsRef<Path>, registry: &Registry) -> anyhow::Result<()> {
+fn process_workspace(
+    workspace: impl AsRef<Path>,
+    registry: &Registry,
+    features: &FeaturesFlags,
+) -> anyhow::Result<()> {
     let workspace = workspace.as_ref();
     info!("Processing workspace {:?}", workspace);
     let metadata = cargo_metadata::MetadataCommand::new()
@@ -47,7 +53,7 @@ fn process_workspace(workspace: impl AsRef<Path>, registry: &Registry) -> anyhow
     );
     for p in packages {
         info!("Processing {}", p.name);
-        registry.add_package(p, &metadata)?;
+        registry.add_package(p, &metadata, features)?;
     }
     Ok(())
 }
@@ -75,9 +81,9 @@ fn main_impl() -> anyhow::Result<()> {
             else {
                 anyhow::bail!("Failed to find cargo workspace at the first level of the tarball");
             };
-            process_workspace(workspace, &registry)?;
+            process_workspace(workspace, &registry, &args.features)?;
         } else {
-            process_workspace(c, &registry)?;
+            process_workspace(c, &registry, &args.features)?;
         }
     }
 

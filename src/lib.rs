@@ -10,6 +10,23 @@ use sha2::Digest;
 const INDEX: &str = "index";
 const CRATES: &str = "crates";
 
+#[derive(clap::Parser)]
+pub struct FeaturesFlags {
+    #[clap(long, conflicts_with = "features")]
+    all_features: bool,
+    #[clap(long)]
+    features: Option<String>,
+}
+impl FeaturesFlags {
+    fn flags(&self) -> String {
+        if self.all_features {
+            "--all-features".into()
+        } else {
+            format!("--features={}", self.features.clone().unwrap_or_default())
+        }
+    }
+}
+
 /// config.json at the root of the index
 #[derive(serde::Serialize)]
 pub struct IndexConfig {
@@ -160,6 +177,7 @@ impl Registry {
         &self,
         p: &cargo_metadata::Package,
         workspace_metadata: &cargo_metadata::Metadata,
+        features: &FeaturesFlags,
     ) -> anyhow::Result<()> {
         if !p
             .targets
@@ -204,7 +222,7 @@ impl Registry {
                 "-p",
                 &p.name,
                 "--no-verify",
-                "--all-features",
+                &features.flags(),
                 "--allow-dirty",
             ])
             .current_dir(p.manifest_path.parent().unwrap())
