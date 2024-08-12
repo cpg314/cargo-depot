@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
@@ -72,7 +72,7 @@ struct Dependency {
     target: Option<cargo_platform::Platform>,
     kind: cargo_metadata::DependencyKind,
     registry: Option<String>,
-    package: Option<cargo_metadata::camino::Utf8PathBuf>,
+    package: Option<String>,
 }
 impl From<cargo_metadata::Dependency> for Dependency {
     fn from(s: cargo_metadata::Dependency) -> Self {
@@ -100,6 +100,7 @@ fn check_dirty(repository: &Path) -> anyhow::Result<()> {
         // Likely not a git repository
         return Ok(());
     }
+
     let out = String::from_utf8_lossy(&out.stdout);
     let out = out
         .lines()
@@ -126,7 +127,6 @@ pub struct IndexMeta {
 }
 impl IndexMeta {
     pub fn from_package(p: &cargo_metadata::Package, checksum: String) -> Self {
-        // TODO: Handle rename?
         let mut deps: Vec<Dependency> = vec![];
         for dep_meta in &p.dependencies {
             let mut dep = Dependency::from(dep_meta.clone());
@@ -138,13 +138,34 @@ impl IndexMeta {
                 // registry.
                 dep.registry = None;
             }
+            // Renames
+            if let Some(original) = dep_meta.rename.clone() {
+                dep.package = Some(dep.name);
+                dep.name = original;
+            }
             deps.push(dep);
         }
+        // Remove features referencing removed dependencies
+        let deps_names: HashSet<_> = deps.iter().map(|d| d.name.clone()).collect();
+        let mut features = p.features.clone();
+        features.iter_mut().for_each(|(_, v)| {
+            v.retain(|f| {
+                if deps_names.contains(f) {
+                    true
+                } else if let Some(dep) = f.strip_prefix("dep:") {
+                    deps_names.contains(dep)
+                } else if let Some((dep, _)) = f.split_once("/") {
+                    deps_names.contains(dep.trim_end_matches('?'))
+                } else {
+                    true
+                }
+            })
+        });
         Self {
             deps,
             name: p.name.clone(),
             vers: p.version.clone(),
-            features: p.features.clone(),
+            features,
             license: p.license.clone(),
             license_file: p.license_file.clone(),
             cksum: checksum,
@@ -206,6 +227,7 @@ impl Registry {
             package.autoexamples = Some(false);
         }
         manifest.bin = None;
+        manifest.example = None;
         let manifest_orig = p.manifest_path.with_extension("toml.pre-edit");
         std::fs::rename(&p.manifest_path, &manifest_orig)?;
         std::fs::write(&p.manifest_path, toml::to_string_pretty(&manifest)?)?;
