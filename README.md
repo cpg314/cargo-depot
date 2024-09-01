@@ -1,4 +1,4 @@
-# cargo-depot
+![cargo-depot](logo.jpg)
 
 This [cargo subcommand](https://doc.rust-lang.org/book/ch14-05-extending-cargo.html) allows creating and maintaining a simple [cargo alternative registry](https://doc.rust-lang.org/cargo/reference/registries.html), which can be served using any webserver (nginx, caddy, miniserve, S3...).
 
