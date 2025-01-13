@@ -30,13 +30,13 @@ On the other hand, this is _not_ a fully-fledged registry; for example, the [web
 ### Installation
 
 ```
-$ cargo install --git https://github.com/cpg314/cargo-local-registry
+$ cargo install --git https://github.com/cpg314/cargo-depot
 ```
 
 ### Initializing and maintaining the registry
 
 ```
-Usage: cargo local-registry [OPTIONS] --registry <REGISTRY> [CRATES]...
+Usage: cargo depot [OPTIONS] --registry <REGISTRY> [CRATES]...
 
 Arguments:
   [CRATES]...  Paths to crates (local workspaces or HTTP links to tar.gz)
