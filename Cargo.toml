@@ -2,6 +2,11 @@
 name = "cargo-depot"
 version = "0.1.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Alternative cargo registry with improved support for git/path dependencies"
+repository = "https://github.com/cpg314/cargo-depot"
+categories = ["development-tools", "command-line-utilities"]
+exclude = ["/example"]
 
 [dependencies]
 anyhow = "1.0.75"
